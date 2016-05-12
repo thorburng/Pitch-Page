@@ -1,1 +1,2 @@
 // My Scripts
+$('article').readmore();
