@@ -1,17 +1,4 @@
 // jQuery Plugin
-/*!
- * @preserve
- *
- * Readmore.js jQuery plugin
- * Author: @jed_foster
- * Project home: http://jedfoster.github.io/Readmore.js
- * Licensed under the MIT license
- *
- * Debounce function from http://davidwalsh.name/javascript-debounce-function
- */
-
-/* global jQuery */
-
 (function(factory) {
   if (typeof define === 'function' && define.amd) {
     // AMD
@@ -38,8 +25,9 @@
         startOpen: false,
 
         // callbacks
-        beforeToggle: function(){},
-        afterToggle: function(){}
+        blockProcessed: function() {},
+        beforeToggle: function() {},
+        afterToggle: function() {}
       },
       cssEmbedded = {},
       uniqueIdCounter = 0;
@@ -188,6 +176,9 @@
 
       if (current.outerHeight(true) <= collapsedHeight + heightMargin) {
         // The block is shorter than the limit, so there's no need to truncate it.
+        if (this.options.blockProcessed && typeof this.options.blockProcessed === 'function') {
+          this.options.blockProcessed(current, false);
+        }
         return true;
       }
       else {
@@ -207,7 +198,7 @@
             };
           })(this))
           .attr({
-            'data-readmore-toggle': '',
+            'data-readmore-toggle': id,
             'aria-controls': id
           }));
 
@@ -215,6 +206,10 @@
           current.css({
             height: collapsedHeight
           });
+        }
+
+        if (this.options.blockProcessed && typeof this.options.blockProcessed === 'function') {
+          this.options.blockProcessed(current, true);
         }
       }
     },
@@ -225,11 +220,11 @@
       }
 
       if (! trigger) {
-        trigger = $('[aria-controls="' + _this.element.id + '"]')[0];
+        trigger = $('[aria-controls="' + this.element.id + '"]')[0];
       }
 
       if (! element) {
-        element = _this.element;
+        element = this.element;
       }
 
       var $element = $(element),
@@ -251,14 +246,18 @@
       // Fire beforeToggle callback
       // Since we determined the new "expanded" state above we're now out of sync
       // with our true current state, so we need to flip the value of `expanded`
-      this.options.beforeToggle(trigger, $element, ! expanded);
+      if (this.options.beforeToggle && typeof this.options.beforeToggle === 'function') {
+        this.options.beforeToggle(trigger, $element, ! expanded);
+      }
 
       $element.css({'height': newHeight});
 
       // Fire afterToggle callback
       $element.on('transitionend', (function(_this) {
         return function() {
-          _this.options.afterToggle(trigger, $element, expanded);
+          if (_this.options.afterToggle && typeof _this.options.afterToggle === 'function') {
+            _this.options.afterToggle(trigger, $element, expanded);
+          }
 
           $(this).attr({
             'aria-expanded': expanded
@@ -273,7 +272,7 @@
             };
           })(this))
         .attr({
-          'data-readmore-toggle': '',
+          'data-readmore-toggle': $element.attr('id'),
           'aria-controls': $element.attr('id')
         }));
     },
@@ -328,4 +327,3 @@
   };
 
 }));
-
